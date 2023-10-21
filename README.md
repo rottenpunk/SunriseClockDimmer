@@ -3,8 +3,9 @@
 ## Overview
 
 The Sunrise Clock is a device that is similar to an alarm clock (in concept), that, using a circadian LED light bulb, 
-gradually turn on the light bulb at the designated alarm time, until it is fully on.  Circadian lights simulate the natural outside light 
-and promotes better sleep by emiting specific wavelengths that simulate the sun rising in the morning.
+gradually turns on the light bulb starting at the designated alarm time, until it is fully on.  Circadian lights simulate 
+the natural outside sunlight and promotes better sleep by emiting specific wavelengths that simulate the sun rising in 
+the morning.
 
 An example of a circadian LED light can be found 
 on Amazon [BIOS Lighting Circadian A19 LED Light Bulb](https://www.amazon.com/gp/product/B08VC71HSG/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1)  
@@ -13,7 +14,7 @@ on Amazon [BIOS Lighting Circadian A19 LED Light Bulb](https://www.amazon.com/gp
 
 The Sunrise Clock has two parts to it:
 
-### The Sunrise Clock Dimmer (This repository) 
+### The Sunrise Clock Dimmer (this repository) 
 
 This is a Spark Fun Pro Micro board (or equivilent), which manages the actual dimming. The Sunrise Clock Webserver
 communicates to this board through a serial connection to send commands to it:
@@ -33,6 +34,6 @@ communicates to this board through a serial connection to send commands to it:
 
 For debugging purposes, you can type these commands into Arduino's USB serial monitor.
 
-### The Sunrise Clock Webserver
-This is an ESP-01S board. This board has an ESP8266 chip on it and 1 meg of memory.
+### The Sunrise Clock Webserver (in the SunriseClockDimmer repository)
+This is an ESP-01S board. This board has an ESP8266 chip on it and 4 meg of memory.
 
