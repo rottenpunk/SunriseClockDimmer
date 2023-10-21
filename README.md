@@ -2,17 +2,17 @@
 
 ## Overview
 
-The Sunrise Clock is a device that is similar to an alarm clock (in concept), that, using a circadian LED light bulb, 
+The Sunrise Clock is a device that is similar to an alarm clock, that, using a circadian LED light bulb, 
 gradually turns on the light bulb starting at the designated alarm time, until it is fully on.  Circadian lights simulate 
 the natural outside sunlight and promotes better sleep by emiting specific wavelengths that simulate the sun rising in 
 the morning.
 
 An example of a circadian LED light can be found 
-on Amazon [BIOS Lighting Circadian A19 LED Light Bulb](https://www.amazon.com/gp/product/B08VC71HSG/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1)  
+on Amazon at: [BIOS Lighting Circadian A19 LED Light Bulb](https://www.amazon.com/gp/product/B08VC71HSG/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1)  
 
 ## Parts is parts...
 
-The Sunrise Clock has two parts to it:
+The Sunrise Clock has two parts to it, the Sunrise Clock Dimmer and the Sunrise Clock Webserver.
 
 ### The Sunrise Clock Dimmer (this repository) 
 
