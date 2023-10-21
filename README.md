@@ -2,10 +2,12 @@
 
 ## Overview
 
-The Sunrise Clock is a device that is similar to an alarm clock (in concept), that, using a cercadian LED light bulb 
-(similar to this one on Amazon:  https://www.amazon.com/gp/product/B08VC71HSG/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1) 
+The Sunrise Clock is a device that is similar to an alarm clock (in concept), that, using a circadian LED light bulb, 
 gradually turn on the light bulb at the designated alarm time, until it is fully on.  Circadian lights simulate the natural outside light 
 and promotes better sleep by emiting specific wavelengths that simulate the sun rising in the morning.
+
+An example of a circadian LED light can be found 
+on Amazon [BIOS Lighting Circadian A19 LED Light Bulb](https://www.amazon.com/gp/product/B08VC71HSG/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&psc=1)  
 
 ## Parts is parts...
 
@@ -17,6 +19,7 @@ This is a Spark Fun Pro Micro board (or equivilent), which manages the actual di
 communicates to this board through a serial connection to send commands to it:
 
 | Command | Description |
+| ------- | ----------- |
 | snnn | Set dim level manually |
 | o | Turn light fully on |                             
 | f | Turn light fully off |                            
