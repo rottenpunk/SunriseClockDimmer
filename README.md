@@ -16,8 +16,12 @@ The Sunrise Clock has two parts to it, the Sunrise Clock Dimmer and the Sunrise 
 
 ### The Sunrise Clock Dimmer (this repository) 
 
-This is a Spark Fun Pro Micro board (or equivilent), which manages the actual dimming. The Sunrise Clock Webserver
-communicates to this board through a serial connection to send commands to it:
+This is a Spark Fun Pro Micro board (or equivilent), which manages the actual dimming. For arduino
+settings, set the board option to *Arduino Leonardo*.  (The Arduino Leonardo has the same processor chip, 
+the ATMega-32U4 chip made by Atmel, which is an 8 bit micro with builtin flash and sdram.) 
+
+The Sunrise Clock Webserver communicates to this board through a serial connection to 
+send commands to it:
 
 | Command | Description |
 | ------- | ----------- |
@@ -34,6 +38,7 @@ communicates to this board through a serial connection to send commands to it:
 
 For debugging purposes, you can type these commands into Arduino's USB serial monitor.
 
-### The Sunrise Clock Webserver (in the SunriseClockDimmer repository)
-This is an ESP-01S board. This board has an ESP8266 chip on it and 4 meg of memory.
+### The Sunrise Clock Webserver (in the SunriseClockWebserver repository)
+This is an ESP-01S board. This board has an ESP8266 chip on it and 4 meg of memory. See the
+SunriseClockWebserver repository README.md for more information about the Sunrise Clock Webserver.
 
