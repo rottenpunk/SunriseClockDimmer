@@ -20,6 +20,19 @@ This is a Spark Fun Pro Micro board (or equivilent), which manages the actual di
 settings, set the board option to *Arduino Leonardo*.  (The Arduino Leonardo has the same processor chip, 
 the ATMega-32U4 chip made by Atmel, which is an 8 bit micro with builtin flash and sdram.) 
 
+255 dimming levels. 0 - off, 255 fully on  (although the range is rally like 5 to 245)                           
+Default UART speed 9600bps. Can be changed.                         
+This version is for Pro Micro (Like the Spark Fun or equivilent vers
+which uses ATMEGA32U4 microprocessor                                
+                                                                    
+Connections:
+```
+OPTIONAL SWITCH -> ARDUINO PIN 2 (could be Wifi reset, but not implemented)
+DIMMER SYNC -> ARDUINO PIN 3                                        
+DIMMER GATE -> ARDUINO PIN 4                                        
+PROMICRO RX -> TX to ESP01S RX (signals must be 3.3volt compliant!) 
+PROMICRO TX -> RX to ESP01S TX (signals must be 3.3volt compliant!) 
+```
 The Sunrise Clock Webserver communicates to this board through a serial connection to 
 send commands to it:
 
@@ -38,7 +51,22 @@ send commands to it:
 
 For debugging purposes, you can type these commands into Arduino's USB serial monitor.
 
-### The Sunrise Clock Webserver (in the SunriseClockWebserver repository)
-This is an ESP-01S board. This board has an ESP8266 chip on it and 4 meg of memory. See the
-SunriseClockWebserver repository README.md for more information about the Sunrise Clock Webserver.
+On the serial port back to the ESP01S (i.e. Serial1), all output responses        
+start with "#" and some decimal value:                                            
+                                                                                   
+ Cmd   Response value                                                              
+| Command | Response value |
+| ------- | -------------- |
+| s | Returns current dimmer value 0-255 |                        
+| o | Returns current dimmer value, which is maximum value (245) |
+| f | Returns current dimmer value, which is minimum value (5) |                   
+| a | Returns either 1, 0 or error code. 1 = alarm now set, 0 = alarm disabled |   
+| t | Returns either 1 or error code |             
+| w | Returns current number of wakeup seconds |                                   
+| c | Returns 0 indicating alarm cancelled |                                       
+                                                                                    
+If there is an error, then response will be #Ennn  where nnn is an error          
+code.  Test for 'E' before trying to scan a decimal value.                        
 
+### The Sunrise Clock Webserver (in the SunriseClockWebserver repository)                   
+This is an ESP-01S board. This board has an ESP8266 chip on it and 4 meg of memory. See the 

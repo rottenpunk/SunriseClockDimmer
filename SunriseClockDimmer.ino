@@ -11,12 +11,12 @@
 //  OPTIONAL SWITCH -> ARDUINO PIN 2
 //  DIMMER SYNC -> ARDUINO PIN 3 
 //  DIMMER GATE -> ARDUINO PIN 4 
-//  PROMICRO RX -> TX to ESP01S RX (signals must be 3.3volt compliant)
-//  PROMICRO TX -> RX to ESP01S TX (signals must be 3.3volt compliant)
+//  PROMICRO RX -> TX to ESP01S RX (signals must be 3.3volt compliant!)
+//  PROMICRO TX -> RX to ESP01S TX (signals must be 3.3volt compliant!)
 // 
 //  Commands from either the USB serial port or the async serial port...
 //
-//  snnn                      Set dim level manually
+//  snnn                      Set dim level manually. if nnn is missing, then not set.
 //  o                         Turn light fully on
 //  f                         Turn light fully off
 //  thh:mm:ss                 Set current time
@@ -24,10 +24,24 @@
 //  a                         Turn off alarm if it is on, or turn on if off
 //  c                         Cancel alarm if it has been triggered
 //  q                         Query current time and alarm time 
-//  w                         Set wake up time in secs if default not desired.
+//  wnnnnn                    Set wake up time in secs if default not desired.
 //  d                         Force alarm going off. 
 //  
-//  All output responses from this code should start with "#" to help parsing.
+//  On the serial port back to the ESP01S (i.e. Serial1), all output responses 
+//  start with "#" and some decimal value:
+//
+//  Cmd   Response value
+//  ----  ------------------------
+//  s     Returns current dimmer value 0-255
+//  o     Returns current dimmer value, which is maximum value (245)
+//  f     Returns current dimmer value, which is minimum value (5)
+//  a     Returns either 1, 0 or error code. 1 = alarm now set, 0 = alarm disabled.
+//  t     Returns either 1 or error code.
+//  w     Returns current number of wakeup seconds
+//  c     Returns 0 indicating alarm cancelled.
+//
+//  If there is an error, then response will be #Ennn  where nnn is an error 
+//  code.  Test for 'E' before trying to scan a decimal value.
 // 
 //-----------------------------------------------------------------------------
 
@@ -35,6 +49,13 @@
 #define MAX_CMDLINE             40 // Maximum size of command line.
 #define DEFAULT_WAKEUP_TIME   (30 * 60)  // 30 minutes - Default time to brighten a light in seconds.
 #define DEFAULT_STARTING_WAKEUP_BRIGHTNESS 16
+
+typedef enum _error_code
+{   
+    ERROR_NO_ERROR        = 0,   
+    ERROR_INVALID_FORMAT  = 1,   
+    ERROR_INVALID_COMMAND = 2,
+} ERROR_CODE;
 
 //#if defined (__AVR_ATmega32U4__)   // Arduino micro is an atmega32u4 processor. and 
 //#include "jo_atmega32u4_regs.h"    // these regs are not defined. so define them! 
@@ -290,17 +311,12 @@ bool read_serial1_input( cmdBuffer *cmdBuff )
 void setDimLevel(int value)
 {
     int s = value;
-#if 0    
-    if (STATUS==1) {
-        if (value!=0) {
-            Serial.print("Setting level to ");
-            Serial.println(value, DEC);
-        }
-    }
-#endif    
+ 
     if (STATUS==0) {
         Serial.println("Error AC line is not detected");
     }
+
+    current_dimmer_setting = value;
 
     if (value > 245) {
         value = 245;
@@ -309,8 +325,6 @@ void setDimLevel(int value)
     if (value < 5) {
         value = 5;
     }
-
-    current_dimmer_setting = value;
     
     value = 256 - value;     // Inverse the level value.
 
@@ -327,7 +341,7 @@ void setDimLevel(int value)
         VARIABLE = VARIABLE * 2;
         TIMER_1_BUF_DELAY = 65535 - VARIABLE;  
         TIMER_1_BUF_IMPULSE = 65535 - (( F * 100)-( VARIABLE / 2));  
-
+#if 0  // debugging
         Serial.print("s=");
         Serial.print(s, DEC);
         Serial.print(" frequency=");
@@ -340,7 +354,7 @@ void setDimLevel(int value)
         Serial.print(TIMER_1_BUF_DELAY);
         Serial.print(" TIMER_1_BUF_IMPULSE=");
         Serial.println(TIMER_1_BUF_IMPULSE);
-   
+#endif
     }
 }
 
@@ -403,32 +417,79 @@ bool parse_time(char *cmd, TIME *ts)
 
 //-----------------------------------------------------------------------------
 // print_status() -- Print out current time and alarm settings...
+// When command is received from webserver, then the return string (on Serial1) is:
+// current time, alarm time, dim value, wake time, time set (0/1), alarm off/on (0/1), triggered (0/1).
+// #hh:mm:ss-hh:mm:ss-nnn-nnnnn-x-x-x
 //-----------------------------------------------------------------------------
 void print_status(uint8_t port)
 {
-    char buf[25];
+    char buf[80];
 
-    Serial.print("#Current time: ");
+#if 0
+    Serial.print("Current time: ");
     sprintf(buf, "%02d:%02d:%02d", curtime.hours, curtime.mins, curtime.secs);
-    Serial.print(buf);
-    Serial.print(" Alarm: ");
+    Serial.println(buf);
+    Serial.print("Alarm: ");
     sprintf(buf, "%02d:%02d:%02d", alarm.hours, alarm.mins, alarm.secs);
-    Serial.print(buf);
-    Serial.print(" Dimmer set at: ");
-    Serial.print(current_dimmer_setting, DEC);
-    Serial.println(" ");
-
+    Serial.println(buf);
+    Serial.print("Dimmer set at: ");
+    Serial.println(current_dimmer_setting, DEC);
+    Serial.print("Wake time (seconds): ");
+    Serial.println(wakeup_seconds);
+    Serial.print("time set: ");
+    Serial.println(time_set ? "Yes" : "No");
+    Serial.print("alarm: ");
+    Serial.println(alarm_set ? "On" : "Off");
+    Serial.print("Triggered: ");
+    Serial.println(alarm_triggered ? "Yes" : "No");
+#endif    
+    sprintf(buf, "#%02d:%02d:%02d-%02d:%02d:%02d-%03d-%05d-%01d-%01d-%01d", 
+                    curtime.hours, curtime.mins, curtime.secs,
+                    alarm.hours, alarm.mins, alarm.secs,
+                    current_dimmer_setting,
+                    wakeup_seconds,
+                    time_set ? 1 : 0,
+                    alarm_set ? 1 : 0,
+                    alarm_triggered ? 1 : 0 );
+                    
+    Serial.println(buf);
+    
     // If this command came from the user (via serial port 1)...
     if(port == 1)
     {
-        Serial1.print("#time:");
-        sprintf(buf, "%02d:%02d:%02d", curtime.hours, curtime.mins, curtime.secs);
-        Serial1.print(buf);
-        Serial1.print(" Alarm:");
-        sprintf(buf, "%02d:%02d:%02d", alarm.hours, alarm.mins, alarm.secs);
-        Serial1.print(buf);
-        Serial1.print(" set:");
-        Serial1.println(current_dimmer_setting, DEC);
+        Serial1.println(buf);
+    }
+}
+
+
+//-----------------------------------------------------------------------------
+// return_value() -- Return value in response to command from webserver...
+//-----------------------------------------------------------------------------
+void return_value(uint8_t port, int value)
+{
+    Serial.print('#');  // Start all responses with pound sign.
+    Serial.println(value); 
+    if(port == 1)
+    {
+        Serial1.print('#');  // Start all responses with pound sign.
+        Serial1.println(value); 
+    }
+}
+
+
+//-----------------------------------------------------------------------------
+// return_error() -- Return error code in response to error parsing command...
+//-----------------------------------------------------------------------------
+void return_error(uint8_t port, ERROR_CODE code)
+{
+    Serial.print('#');  // Start all responses with pound sign.
+    Serial.print('E'); 
+    Serial.println((int)code);
+    if(port == 1)
+    {
+        Serial1.print('#');  // Start all responses with pound sign.
+        Serial1.print('E'); 
+        Serial1.println((int)code);
     }
 }
 
@@ -437,69 +498,89 @@ void print_status(uint8_t port)
 // Process a command.  Pass ptr to a command buffer( probably the serial
 // buffer)...
 //-----------------------------------------------------------------------------
-void process_command(char* cmd, uint8_t port)
+void process_command(uint8_t port, char* cmd)
 {
     int value;
 
     // Display command on USB serial port...
-    Serial.println(cmd);   
-        
+    Serial.println(cmd);  
+         
     switch(*cmd++) 
     {
-        case 's':                        // Set dim level manually...
-            value = atoi(cmd);           // Parse decimal number s/b 1-255;
-            setDimLevel(value);          // set. Will complain if not 1-255;
+        case 's':                        // Set dim level manually. if no value, return current value.
+            if (isdigit(*cmd)) {
+                value = atoi(cmd);           // Parse decimal number s/b 1-255;
+                setDimLevel(value);          // set. Will complain if not 1-255;
+            }
+            return_value(port, current_dimmer_setting);
             break;
 
         case 'o':                        // Quick full on...
             setDimLevel(255);            // set. Will complain if not 1-255;
             alarm_triggered = false;     // Turn off alarm, if it was on.
+            return_value(port, current_dimmer_setting);
             break;
 
         case 'f':                        // Quick full off...
             setDimLevel(0);              // set. Will complain if not 1-255;
             alarm_triggered = false;     // Turn off alarm, if it was on.
+            return_value(port, current_dimmer_setting);
             break;
 
         case 't':                              // Set time...
             if( !parse_time(cmd, &curtime) ) { // Set current time into time structure;
                 Serial.println("Invalid format");
+                return_error(port, ERROR_INVALID_FORMAT);
                 time_set = false;
             } else {
-                time_set = true;    
+                time_set = true;  
+                return_value(port, 1);  
             }    
             break;
 
         case 'a':                              // Set alarm...
-            if( !parse_time(cmd, &alarm) ) {   // Set alarm time into time structure;
+            if ( *cmd == '\0' ) {
                 if( alarm_set ) {              // Time not given but alarm previously set?   
                     alarm_set = false;         // So turn off alarm.  
+                    return_value(port, 0);
                 } else {                       // Else, time not given and alarm previous not set.
-                    alarm_set = false;         // Just turn alarm on asumming alarm time previously set.
+                    alarm_set = true;         // Just turn alarm on asumming alarm time previously set.
+                    return_value(port, 1);
                 }
+            } else if( !parse_time(cmd, &alarm) ) {   // parse alarm time into time structure.
+                alarm_set = false;
+                Serial.println("Invalid format");
+                return_error(port, ERROR_INVALID_FORMAT);
             } else {    
                 alarm_set = true;              // Alarm is now set.
+                return_value(port, 1);
             }    
             break;
             
         case 'c':                        // Cancel alarm and stop brightening cycle... 
             alarm_triggered = 0;
+            return_value(port, 0);
             break;
             
-        case 'q':                        // Query current time and alarm time... 
+        case 'q':                        // Query current time, alarm time, dim value, wake time, time set, alarm off/on, triggered.
             print_status(port);
             break;
             
         case 'w':                        // Set wake up time in secs if default not desired.
-            wakeup_seconds = atoi(cmd);  // Parse decimal number;
+            if (isdigit(*cmd)) {
+                wakeup_seconds = atoi(cmd);  // Parse decimal number;
+            }
+            return_value(port, wakeup_seconds);
             break;
 
         case 'd':                        // Force alarm going off. 
             trigger_alarm();
+            return_value(port, 1);             // Indicate alarm starting.
             break;
                 
         default:
             Serial.println("Invalid command");
+            return_error(port, ERROR_INVALID_COMMAND);
             break;
     }
 
@@ -582,18 +663,18 @@ void trigger_alarm()
 void loop() 
 {
 
-    if( Serial.available() ) {             
-        if( read_serial_input( &serialCmdBuffer ) )
-            process_command( serialCmdBuffer.buffer, 0 );
+    while ( Serial.available() ) {             
+        if ( read_serial_input( &serialCmdBuffer ) )
+            process_command( 0, serialCmdBuffer.buffer );
     }
 
-    if( Serial1.available() ) {             
-        if( read_serial1_input( &serial1CmdBuffer ) )
-            process_command( serial1CmdBuffer.buffer, 1 );
+    while ( Serial1.available() ) {             
+        if ( read_serial1_input( &serial1CmdBuffer ) )
+            process_command( 1, serial1CmdBuffer.buffer );
     }
 
     noInterrupts();
-    if( process_time >= 120 ) {         // process_time incremented 120 times/second.
+    if ( process_time >= 120 ) {         // process_time incremented 120 times/second.
         interrupts();
         update_clock();                 // Update our clock once a second.
         noInterrupts();
@@ -601,7 +682,7 @@ void loop()
     }
     interrupts();
 
-    if( !alarm_triggered ) {
+    if ( !alarm_triggered ) {
         if( check_alarm_trigger() ) {
             trigger_alarm();
         }
