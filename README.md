@@ -53,7 +53,6 @@ For debugging purposes, you can type these commands into Arduino's USB serial mo
 On the serial port back to the ESP01S (i.e. Serial1), all output responses 
 start with "#" and some decimal value:        
                                                                                    
- Cmd   Response value                                                              
 | Command | Response value |
 | ------- | -------------- |
 | s | Returns current dimmer value 0-255 |                        
