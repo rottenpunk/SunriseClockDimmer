@@ -17,28 +17,32 @@
 //  Commands from either the USB serial port or the async serial port...
 //
 //  snnn                      Set dim level manually. if nnn is missing, then not set.
-//  o                         Turn light fully on
-//  f                         Turn light fully off
-//  thh:mm:ss                 Set current time
-//  ahh:mm:ss                 Set alarm time and turn alarm on
-//  a                         Turn off alarm if it is on, or turn on if off
-//  c                         Cancel alarm if it has been triggered
-//  q                         Query current time and alarm time 
+//  o                         Turn light fully on.
+//  f                         Turn light fully off.
+//  thh:mm:ss                 Set current time.
+//  ahh:mm:ss                 Set alarm time and turn alarm on.
+//  a                         Turn off alarm if it is on, or turn on if off.
+//  c                         Cancel alarm if it has been triggered.
 //  wnnnnn                    Set wake up time in secs if default not desired.
 //  d                         Force alarm going off. 
+//  q                         Query current time, alarm time, current dimmer setting, 
+//                            wakeup seconds, bool time set, bool alarm set, bool 
+//                            alarm triggered, with a dash between each of the values:
+//                            #hh:mm:ss-hh:mm:ss-ddd-wwwww-b-b-b
 //  
 //  On the serial port back to the ESP01S (i.e. Serial1), all output responses 
-//  start with "#" and some decimal value:
+//  (except the q command) will start with "#" and some decimal value:
 //
 //  Cmd   Response value
 //  ----  ------------------------
-//  s     Returns current dimmer value 0-255
-//  o     Returns current dimmer value, which is maximum value (245)
-//  f     Returns current dimmer value, which is minimum value (5)
+//  s     Returns current dimmer value 0-255.
+//  o     Returns current dimmer value, which is maximum value (245).
+//  f     Returns current dimmer value, which is minimum value (5).
 //  a     Returns either 1, 0 or error code. 1 = alarm now set, 0 = alarm disabled.
 //  t     Returns either 1 or error code.
-//  w     Returns current number of wakeup seconds
+//  w     Returns current number of wakeup seconds.
 //  c     Returns 0 indicating alarm cancelled.
+//  q     Returns #hh:mm:ss-hh:mm:ss-ddd-wwwww-b-b-b (as mentioned above).
 //
 //  If there is an error, then response will be #Ennn  where nnn is an error 
 //  code.  Test for 'E' before trying to scan a decimal value.

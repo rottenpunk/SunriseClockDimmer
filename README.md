@@ -47,6 +47,14 @@ send commands to it:
 | q | Query current time and alarm time |           
 | w | Set wake up time in secs if default not desired. |
 | d | Force alarm going off. |
+| q | Query a few things (see below) |
+
+The q command returns the current time, the alarm time, the current dimmer setting,
+the current wakeup time in seconds, whether the time is set, whether the alarm 
+is set, and if the alarm has been triggered (and is going through it's dimming period).
+The values returned from the q command is a string like this:
+
+`#hh:mm:ss-hh:mm:ss-nnn-sssss-b-b-b` 
 
 For debugging purposes, you can type these commands into Arduino's USB serial monitor.
 
@@ -62,6 +70,7 @@ start with "#" and some decimal value:
 | t | Returns either 1 or error code |             
 | w | Returns current number of wakeup seconds |                                   
 | c | Returns 0 indicating alarm cancelled |                                       
+| q | Returns  #hh:mm:ss-hh:mm:ss-ddd-wwwww-b-b-b |
                                                                                     
 If there is an error, then response will be #Ennn  where nnn is an error 
 code.  Test for 'E' before trying to scan a decimal value.                        
