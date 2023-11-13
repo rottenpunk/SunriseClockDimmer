@@ -14,7 +14,12 @@
 //  PROMICRO RX -> TX to ESP01S RX (signals must be 3.3volt compliant!)
 //  PROMICRO TX -> RX to ESP01S TX (signals must be 3.3volt compliant!)
 // 
-//  Commands from either the USB serial port or the async serial port...
+//  Commands can come from either the USB serial port or the async serial port. When
+//  they come in through the serial port, they would be coming in from the the 
+//  SunriseClockWebserver and should be preceeded with three pound signs ###.  This
+//  is because the webserver will spit out all sorts of things when it is booting, so
+//  we want to absolutely identify when commands start.  When typing in commands
+//  through the USB serial port, the ### is not needed before the command.
 //
 //  snnn                      Set dim level manually. if nnn is missing, then not set.
 //  o                         Turn light fully on.
@@ -28,10 +33,11 @@
 //  q                         Query current time, alarm time, current dimmer setting, 
 //                            wakeup seconds, bool time set, bool alarm set, bool 
 //                            alarm triggered, with a dash between each of the values:
-//                            #hh:mm:ss-hh:mm:ss-ddd-wwwww-b-b-b
+//                            ###hh:mm:ss-hh:mm:ss-ddd-wwwww-b-b-b
 //  
-//  On the serial port back to the ESP01S (i.e. Serial1), all output responses 
-//  (except the q command) will start with "#" and some decimal value:
+//  On the serial port back to the ESP01S (i.e. Serial1), all output responses, 
+//  except the q command, will start with "#" and some decimal value.  The q command
+//  return # followed by a string (see below).  
 //
 //  Cmd   Response value
 //  ----  ------------------------
@@ -59,12 +65,8 @@ typedef enum _error_code
     ERROR_NO_ERROR        = 0,   
     ERROR_INVALID_FORMAT  = 1,   
     ERROR_INVALID_COMMAND = 2,
+    ERROR_NO_AC_LINE      = 3,
 } ERROR_CODE;
-
-//#if defined (__AVR_ATmega32U4__)   // Arduino micro is an atmega32u4 processor. and 
-//#include "jo_atmega32u4_regs.h"    // these regs are not defined. so define them! 
-//#endif
-
 
 // These variables are used in the dimming functions
 unsigned char count;
@@ -86,7 +88,7 @@ char alarm_set = false;
 unsigned long wakeup_count;
 unsigned long wakeup_count_counter;
 
-
+// Serial command input buffer (used for both Serial and Serial1)... 
 typedef struct {
     int index = 0;
     char buffer[ MAX_CMDLINE+1];
@@ -94,6 +96,8 @@ typedef struct {
 
 cmdBuffer serialCmdBuffer;
 cmdBuffer serial1CmdBuffer;
+
+int serial1_cmd_pfx_cnt = 0;   // All commands entered through serial1 must start with ###.
 
 char process_time = 0;
 char alarm_triggered = 0;
@@ -170,7 +174,8 @@ void setup() {
 //-----------------------------------------------------------------------------
 // zero_cross_int() -- Our interrupt routine for zero crossings...
 //-----------------------------------------------------------------------------
-void zero_cross_int()  {
+void zero_cross_int()  
+{
  
     if (STATUS && STATE) {
         TIMER_1_DELAY = TIMER_1_BUF_DELAY;     
@@ -213,7 +218,8 @@ void zero_cross_int()  {
 //-----------------------------------------------------------------------------
 // Timer 1 interrupt routine...
 //-----------------------------------------------------------------------------
-ISR(TIMER1_OVF_vect) {
+ISR(TIMER1_OVF_vect) 
+{
 
     TIMER_1_IMPULSE = TIMER_1_BUF_IMPULSE; 
 
@@ -303,9 +309,29 @@ bool read_serial1_input( cmdBuffer *cmdBuff )
 {
     char c;
 
-    c = Serial1.read();    
-    Serial1.print(c);   // Echo back the character read.
-    return add_char_to_cmdline_buff( c, cmdBuff );
+    c = Serial1.read();  
+      
+    // we must get three hash marks (###) before assuming we are getting a 
+    // command.  Use serial1_cmd_pfx_cnt to count the hash marks...
+    if (serial1_cmd_pfx_cnt < 3) {
+        Serial.print(c);   // Echo character to USB serial port.
+        if (c == '#') {
+            serial1_cmd_pfx_cnt++;
+            return false;         // We don't have 3 yet, so don't have a command yet.
+        } else {                  // Don't have 3 yet and we didn't recv another hash mark.
+            serial1_cmd_pfx_cnt = 0;  // Reset hash counter.
+            return false;        
+        }
+    }
+
+    // We fall through here if we've already received 3 hash marks.
+    // receiving a command.  Add this character to cmd line buffer...
+    if ( add_char_to_cmdline_buff( c, cmdBuff ) == false ) {
+        return false;
+    } else {  // We have a complete command to process...
+        serial1_cmd_pfx_cnt = 0;  // reset our hash counter to start over again.
+        return true;              // Indicate we have a complete command to process.
+    }
 }
 
 
@@ -345,6 +371,7 @@ void setDimLevel(int value)
         VARIABLE = VARIABLE * 2;
         TIMER_1_BUF_DELAY = 65535 - VARIABLE;  
         TIMER_1_BUF_IMPULSE = 65535 - (( F * 100)-( VARIABLE / 2));  
+        
 #if 0  // debugging
         Serial.print("s=");
         Serial.print(s, DEC);
@@ -515,19 +542,33 @@ void process_command(uint8_t port, char* cmd)
             if (isdigit(*cmd)) {
                 value = atoi(cmd);           // Parse decimal number s/b 1-255;
                 setDimLevel(value);          // set. Will complain if not 1-255;
+                
             }
-            return_value(port, current_dimmer_setting);
+            if (STATUS==0) {
+                return_error(port, ERROR_NO_AC_LINE);
+            } else {
+                return_value(port, current_dimmer_setting);
+            }
             break;
 
         case 'o':                        // Quick full on...
             setDimLevel(255);            // set. Will complain if not 1-255;
             alarm_triggered = false;     // Turn off alarm, if it was on.
-            return_value(port, current_dimmer_setting);
+            if (STATUS==0) {
+                return_error(port, ERROR_NO_AC_LINE);
+            } else {
+                return_value(port, current_dimmer_setting);
+            }
             break;
 
         case 'f':                        // Quick full off...
             setDimLevel(0);              // set. Will complain if not 1-255;
             alarm_triggered = false;     // Turn off alarm, if it was on.
+            if (STATUS==0) {
+                return_error(port, ERROR_NO_AC_LINE);
+            } else {
+                return_value(port, current_dimmer_setting);
+            }
             return_value(port, current_dimmer_setting);
             break;
 
