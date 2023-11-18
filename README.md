@@ -35,6 +35,15 @@ PROMICRO TX -> RX to ESP01S TX (signals must be 3.3volt compliant!)
 The Sunrise Clock Webserver communicates to this board through a serial connection to 
 send commands to it:
 
+Commands can come from either the USB serial port or the async serial port. When
+they come in through the serial port, they would be coming in from the 
+SunriseClockWebserver and should be preceeded with three pound signs ###.  This
+is because the webserver will spit out all sorts of things when it is booting, so
+we want to absolutely identify when commands start.  When typing in commands
+through the USB serial port, the ### is not needed before the command.
+
+### Commands
+
 | Command | Description |
 | ------- | ----------- |
 | snnn | Set dim level manually |
@@ -49,14 +58,9 @@ send commands to it:
 | d | Force alarm going off. |
 | q | Query a few things (see below) |
 
-The q command returns the current time, the alarm time, the current dimmer setting,
-the current wakeup time in seconds, whether the time is set, whether the alarm 
-is set, and if the alarm has been triggered (and is going through it's dimming period).
-The values returned from the q command is a string like this:
-
-`#hh:mm:ss-hh:mm:ss-nnn-sssss-b-b-b` 
-
 For debugging purposes, you can type these commands into Arduino's USB serial monitor.
+
+### Responses: Returned Values or Returned Errors
 
 On the serial port back to the ESP01S (i.e. Serial1), all output responses 
 start with "#" and some decimal value:        
@@ -71,6 +75,13 @@ start with "#" and some decimal value:
 | w | Returns current number of wakeup seconds |                                   
 | c | Returns 0 indicating alarm cancelled |                                       
 | q | Returns  #hh:mm:ss-hh:mm:ss-ddd-wwwww-b-b-b |
+
+The q command returns the current time, the alarm time, the current dimmer setting,
+the current wakeup time in seconds, whether the time is set, whether the alarm 
+is set, and if the alarm has been triggered (and is going through it's dimming period).
+The values returned from the q command is a string like this:
+
+`#hh:mm:ss-hh:mm:ss-nnn-sssss-b-b-b` 
                                                                                     
 If there is an error, then response will be #Ennn  where nnn is an error 
 code.  Test for 'E' before trying to scan a decimal value.                        
@@ -78,3 +89,6 @@ code.  Test for 'E' before trying to scan a decimal value.
 ### The Sunrise Clock Webserver (in the SunriseClockWebserver repository)                   
 This is an ESP-01S board. This board has an ESP8266 chip on it and 4 meg of memory. See the 
 SunriseClockWebserver repository for more information.
+
+### Sunrise Clock Diagram
+![](Sunrise_Clock_Diagram.JPG)
