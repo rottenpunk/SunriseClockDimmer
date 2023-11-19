@@ -569,7 +569,6 @@ void process_command(uint8_t port, char* cmd)
             } else {
                 return_value(port, current_dimmer_setting);
             }
-            return_value(port, current_dimmer_setting);
             break;
 
         case 't':                              // Set time...
@@ -631,11 +630,6 @@ void process_command(uint8_t port, char* cmd)
 
     // Indicate another command can be entered...
     Serial.print(">");
-    if( port == 1)
-    {
-        Serial1.print(">");
-    }
-
 }
 
 
