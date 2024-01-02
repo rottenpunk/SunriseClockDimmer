@@ -4,7 +4,7 @@
 //  Controlled via UART (RX TX pins on board)
 //  Autodetect AC Line frequency
 //  255 dimming levels. 0 - off, 255 fully on
-//  Default UART speed 9600bps. Can be changed.
+//  Default UART speed 9600bps. We will make it faster.
 //  THis version is for Pro Micro (Like the Spark Fun or equivilent versions)
 //  which uses ATMEGA32U4 microprocessor
 //  
@@ -168,7 +168,7 @@ void setup() {
     Serial.print(">");
 
     // Serial through Tx/Rx pins
-    Serial1.begin(9600); // UART SPEED
+    Serial1.begin(115200); // UART SPEED
     Serial1.print(">");
 
 }
