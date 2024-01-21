@@ -4,7 +4,7 @@
 //  Controlled via UART (RX TX pins on board)
 //  Autodetect AC Line frequency
 //  255 dimming levels. 0 - off, 255 fully on
-//  Default UART speed 9600bps. Can be changed.
+//  Default UART speed 9600bps. We will make it faster.
 //  THis version is for Pro Micro (Like the Spark Fun or equivilent versions)
 //  which uses ATMEGA32U4 microprocessor
 //  
@@ -26,7 +26,8 @@
 //  f                         Turn light fully off.
 //  thh:mm:ss                 Set current time.
 //  ahh:mm:ss                 Set alarm time and turn alarm on.
-//  a                         Turn off alarm if it is on, or turn on if off.
+//  ao                        Turn on alarm,
+//  af                        Turn off alarm.
 //  c                         Cancel alarm if it has been triggered.
 //  wnnnnn                    Set wake up time in secs if default not desired.
 //  d                         Force alarm going off. 
@@ -67,6 +68,8 @@ typedef enum _error_code
     ERROR_INVALID_COMMAND = 2,
     ERROR_NO_AC_LINE      = 3,
 } ERROR_CODE;
+
+
 
 // These variables are used in the dimming functions
 unsigned char count;
@@ -165,7 +168,7 @@ void setup() {
     Serial.print(">");
 
     // Serial through Tx/Rx pins
-    Serial1.begin(9600); // UART SPEED
+    Serial1.begin(115200); // UART SPEED
     Serial1.print(">");
 
 }
@@ -569,7 +572,6 @@ void process_command(uint8_t port, char* cmd)
             } else {
                 return_value(port, current_dimmer_setting);
             }
-            return_value(port, current_dimmer_setting);
             break;
 
         case 't':                              // Set time...
@@ -589,10 +591,14 @@ void process_command(uint8_t port, char* cmd)
                     alarm_set = false;         // So turn off alarm.  
                     return_value(port, 0);
                 } else {                       // Else, time not given and alarm previous not set.
-                    alarm_set = true;         // Just turn alarm on asumming alarm time previously set.
+                    alarm_set = true;          // Just turn alarm on asumming alarm time previously set.
                     return_value(port, 1);
                 }
-            } else if( !parse_time(cmd, &alarm) ) {   // parse alarm time into time structure.
+            } else if ( *cmd == 'o' ) {
+                alarm_set = true;              // Turn on alarm
+            } else if ( *cmd == 'f' ) {
+                alarm_set = false;             // Turn off alarm.  
+            } else if ( !parse_time(cmd, &alarm) ) {   // parse alarm time into time structure.
                 alarm_set = false;
                 Serial.println("Invalid format");
                 return_error(port, ERROR_INVALID_FORMAT);
@@ -631,11 +637,6 @@ void process_command(uint8_t port, char* cmd)
 
     // Indicate another command can be entered...
     Serial.print(">");
-    if( port == 1)
-    {
-        Serial1.print(">");
-    }
-
 }
 
 
