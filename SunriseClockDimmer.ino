@@ -211,6 +211,7 @@ void zero_cross_int()
             if(--wakeup_count_counter == 0) {
                 wakeup_count_counter = wakeup_count;  // Reset the countdown counter.
                 setDimLevel( current_dimmer_setting + 1 );
+
             }
         }
     }
@@ -547,6 +548,7 @@ void process_command(uint8_t port, char* cmd)
                 setDimLevel(value);          // set. Will complain if not 1-255;
                 
             }
+            alarm_triggered = false;       // Turn off alarm, if it was triggered. 
             if (STATUS==0) {
                 return_error(port, ERROR_NO_AC_LINE);
             } else {
@@ -605,11 +607,12 @@ void process_command(uint8_t port, char* cmd)
             } else {    
                 alarm_set = true;              // Alarm is now set.
                 return_value(port, 1);
-            }    
+            }   
+            alarm_triggered = false;       // Turn off alarm, if it was triggered. 
             break;
             
         case 'c':                        // Cancel alarm and stop brightening cycle... 
-            alarm_triggered = 0;
+            alarm_triggered = false;
             return_value(port, 0);
             break;
             
